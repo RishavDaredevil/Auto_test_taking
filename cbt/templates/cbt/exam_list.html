@@ -2,6 +2,7 @@
 
 {% block content %}
 <h2>Available Exams</h2>
+<a href="{% url 'add_exam' %}" style="display:inline-block; padding: 10px; background: #28a745; color: white; text-decoration: none; margin-bottom: 20px;">Add Exam</a>
 <ul>
     {% for exam in exams %}
     <li><a href="{% url 'exam_detail' exam.slug %}">{{ exam.title }}</a></li>
