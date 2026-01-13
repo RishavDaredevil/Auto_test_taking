@@ -1,0 +1,338 @@
+{% extends 'exam/base.html' %}
+
+{% block extra_css %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-2 d-flex justify-content-between align-items-center bg-light p-2 border-bottom">
+        <h4 class="m-0">{{ attempt.exam.title }}</h4>
+        <div class="timer" id="timer">00:00:00</div>
+        <div>
+            <button class="btn btn-outline-secondary btn-sm" onclick="toggleCalculator()">Calculator</button>
+            <form action="{% url 'submit_attempt' attempt.id %}" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to submit?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger btn-sm">Submit Exam</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="split-screen">
+    <!-- Left Pane: PDF Viewer -->
+    <div class="left-pane" id="pdf-container">
+        <div class="pdf-toolbar">
+            <div>
+                <button onclick="prevPage()">Prev</button>
+                <button onclick="nextPage()">Next</button>
+            </div>
+            <span>Page: <span id="page_num"></span> / <span id="page_count"></span></span>
+            <div>
+                <button onclick="zoomIn()">+</button>
+                <button onclick="zoomOut()">-</button>
+            </div>
+        </div>
+        <div style="overflow: auto; height: calc(100% - 40px); display: flex; justify-content: center; background-color: #555;">
+            <canvas id="the-canvas"></canvas>
+        </div>
+    </div>
+
+    <!-- Right Pane: Question Palette & Input -->
+    <div class="right-pane">
+        <div id="question-display-area">
+            <h5>Question No. <span id="q-num-display">1</span></h5>
+            <div class="badge bg-info mb-2" id="q-type-display">MCQ</div>
+            <div class="badge bg-secondary mb-2" id="q-section-display">General</div>
+
+            <div class="card p-3 mb-3">
+                <div id="input-area">
+                    <!-- Dynamic Input Inserted Here -->
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between mb-4">
+                <button class="btn btn-warning btn-sm" onclick="markForReview()">Mark for Review</button>
+                <button class="btn btn-primary btn-sm" onclick="saveAndNext()">Save & Next</button>
+            </div>
+        </div>
+
+        <hr>
+        <h6>Question Palette</h6>
+        <ul class="nav nav-tabs" id="sectionTabs" role="tablist">
+            {% for section, questions in sections.items %}
+            <li class="nav-item" role="presentation">
+                <button class="nav-link {% if forloop.first %}active{% endif %}" id="tab-{{ forloop.counter }}" data-bs-toggle="tab" data-bs-target="#content-{{ forloop.counter }}" type="button" role="tab">{{ section }}</button>
+            </li>
+            {% endfor %}
+        </ul>
+        <div class="tab-content pt-2" id="sectionTabsContent">
+            {% for section, questions in sections.items %}
+            <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" id="content-{{ forloop.counter }}" role="tabpanel">
+                <div class="palette-grid">
+                    {% for r in questions %}
+                    <div class="palette-btn {{ r.status }}" id="btn-{{ r.question.question_number }}" onclick="loadQuestion({{ r.question.question_number }})">
+                        {{ r.question.question_number }}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="mt-4 small">
+            <span class="badge bg-success">Answered</span>
+            <span class="badge bg-danger">Not Answered</span>
+            <span class="badge bg-warning text-dark">Marked</span>
+            <span class="badge bg-light text-dark border">Not Visited</span>
+        </div>
+    </div>
+</div>
+
+<!-- Calculator Modal -->
+<div id="calculator-modal" class="calculator-modal">
+    <div class="calculator-header">
+        <span>Scientific Calculator</span>
+        <button onclick="toggleCalculator()" class="btn-close btn-close-white"></button>
+    </div>
+    <div class="p-2 h-100">
+        <iframe src="{% url 'calculator' %}" style="width:100%; height:100%; border:none;"></iframe>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // --- Data Initialization ---
+    const examData = {{ exam_data_json|safe }};
+    const pdfUrl = "{{ attempt.exam.question_paper.url }}";
+    const csrfToken = "{{ csrf_token }}";
+
+    // --- State Variables ---
+    let currentQ = 1; // Default start
+    // Find first question number
+    const qNumbers = Object.keys(examData.questions).map(Number).sort((a,b)=>a-b);
+    if(qNumbers.length > 0) currentQ = qNumbers[0];
+
+    let timeLeft = examData.duration_seconds; // derived from remaining time logic ideally
+    if (examData.current_state && examData.current_state.time_left) {
+        timeLeft = examData.current_state.time_left;
+    }
+
+    // --- PDF.js Logic ---
+    let pdfDoc = null,
+        pageNum = 1,
+        pageRendering = false,
+        pageNumPending = null,
+        scale = 1.0,
+        canvas = document.getElementById('the-canvas'),
+        ctx = canvas.getContext('2d');
+
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+    pdfjsLib.getDocument(pdfUrl).promise.then(function(pdfDoc_) {
+        pdfDoc = pdfDoc_;
+        document.getElementById('page_count').textContent = pdfDoc.numPages;
+        renderPage(pageNum);
+    });
+
+    function renderPage(num) {
+        pageRendering = true;
+        pdfDoc.getPage(num).then(function(page) {
+            var viewport = page.getViewport({scale: scale});
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+
+            var renderContext = {
+                canvasContext: ctx,
+                viewport: viewport
+            };
+            var renderTask = page.render(renderContext);
+
+            renderTask.promise.then(function() {
+                pageRendering = false;
+                if (pageNumPending !== null) {
+                    renderPage(pageNumPending);
+                    pageNumPending = null;
+                }
+            });
+        });
+        document.getElementById('page_num').textContent = num;
+    }
+
+    function queueRenderPage(num) {
+        if (pageRendering) {
+            pageNumPending = num;
+        } else {
+            renderPage(num);
+        }
+    }
+
+    function prevPage() {
+        if (pageNum <= 1) return;
+        pageNum--;
+        queueRenderPage(pageNum);
+    }
+
+    function nextPage() {
+        if (pageNum >= pdfDoc.numPages) return;
+        pageNum++;
+        queueRenderPage(pageNum);
+    }
+
+    function zoomIn() {
+        scale += 0.2;
+        renderPage(pageNum);
+    }
+
+    function zoomOut() {
+        if(scale > 0.4) {
+            scale -= 0.2;
+            renderPage(pageNum);
+        }
+    }
+
+    // --- Exam Logic ---
+
+    function loadQuestion(qNum) {
+        currentQ = qNum;
+        const qData = examData.questions[qNum];
+
+        document.getElementById('q-num-display').textContent = qNum;
+        document.getElementById('q-type-display').textContent = qData.type;
+        document.getElementById('q-section-display').textContent = qData.section;
+
+        // Render Input
+        const inputArea = document.getElementById('input-area');
+        inputArea.innerHTML = '';
+
+        if (qData.type === 'MCQ') {
+            const options = ['A', 'B', 'C', 'D'];
+            options.forEach(opt => {
+                const checked = qData.user_input === opt ? 'checked' : '';
+                inputArea.innerHTML += `
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="ans" id="opt${opt}" value="${opt}" ${checked}>
+                        <label class="form-check-label" for="opt${opt}">Option ${opt}</label>
+                    </div>`;
+            });
+        } else if (qData.type === 'MSQ') {
+             const options = ['A', 'B', 'C', 'D'];
+             let currentVals = qData.user_input ? qData.user_input.split(',') : [];
+             options.forEach(opt => {
+                const checked = currentVals.includes(opt) ? 'checked' : '';
+                inputArea.innerHTML += `
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="ans" id="opt${opt}" value="${opt}" ${checked}>
+                        <label class="form-check-label" for="opt${opt}">Option ${opt}</label>
+                    </div>`;
+            });
+        } else if (qData.type === 'NAT') {
+            const val = qData.user_input || '';
+            inputArea.innerHTML += `
+                <div class="mb-3">
+                    <label class="form-label">Enter Numerical Value:</label>
+                    <input type="text" class="form-control" id="nat-input" value="${val}">
+                </div>`;
+        }
+
+        // Update palette status if not visited
+        if (qData.status === 'not_visited') {
+            // Wait until saved to change status? No, typically "not_answered" is red.
+            // But usually just viewing it doesn't make it red/green.
+            // We will leave it as is until explicit save.
+        }
+    }
+
+    function getInputValue() {
+        const qData = examData.questions[currentQ];
+        if (qData.type === 'MCQ') {
+            const el = document.querySelector('input[name="ans"]:checked');
+            return el ? el.value : null;
+        } else if (qData.type === 'MSQ') {
+            const els = document.querySelectorAll('input[name="ans"]:checked');
+            const vals = Array.from(els).map(e => e.value).sort();
+            return vals.length > 0 ? vals.join(',') : null;
+        } else if (qData.type === 'NAT') {
+            return document.getElementById('nat-input').value;
+        }
+        return null;
+    }
+
+    function saveAndNext() {
+        const val = getInputValue();
+        const status = val ? 'answered' : 'not_answered';
+
+        updateQuestionState(currentQ, val, status);
+
+        // Move to next
+        const idx = qNumbers.indexOf(currentQ);
+        if (idx < qNumbers.length - 1) {
+            loadQuestion(qNumbers[idx + 1]);
+        }
+    }
+
+    function markForReview() {
+        const val = getInputValue();
+        const status = val ? 'marked_for_review_answered' : 'marked_for_review'; // simplified
+
+        updateQuestionState(currentQ, val, 'marked_for_review');
+
+        // Move to next
+        const idx = qNumbers.indexOf(currentQ);
+        if (idx < qNumbers.length - 1) {
+            loadQuestion(qNumbers[idx + 1]);
+        }
+    }
+
+    function updateQuestionState(qNum, val, status) {
+        examData.questions[qNum].user_input = val;
+        examData.questions[qNum].status = status;
+
+        // Update UI
+        const btn = document.getElementById(`btn-${qNum}`);
+        btn.className = `palette-btn ${status}`;
+
+        // Sync with backend
+        fetch(window.location.href, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                question_id: examData.questions[qNum].id,
+                user_input: val,
+                status: status,
+                current_state: { time_left: timeLeft }
+            })
+        });
+    }
+
+    // --- Timer ---
+    setInterval(() => {
+        if(timeLeft > 0) {
+            timeLeft--;
+            const h = Math.floor(timeLeft / 3600).toString().padStart(2, '0');
+            const m = Math.floor((timeLeft % 3600) / 60).toString().padStart(2, '0');
+            const s = (timeLeft % 60).toString().padStart(2, '0');
+            document.getElementById('timer').textContent = `${h}:${m}:${s}`;
+        } else {
+            // Auto submit
+            alert("Time is up! Submitting exam.");
+            document.querySelector('form[action*="submit"]').submit();
+        }
+    }, 1000);
+
+    // --- Calculator ---
+    function toggleCalculator() {
+        const modal = document.getElementById('calculator-modal');
+        modal.style.display = modal.style.display === 'block' ? 'none' : 'block';
+    }
+
+    // Initialize first question
+    loadQuestion(currentQ);
+
+</script>
+{% endblock %}

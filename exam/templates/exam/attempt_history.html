@@ -1,0 +1,33 @@
+{% extends 'exam/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Attempt History</h2>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Exam</th>
+                <th>Date</th>
+                <th>Score</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for attempt in attempts %}
+            <tr>
+                <td>{{ attempt.exam.title }}</td>
+                <td>{{ attempt.started_at|date:"Y-m-d H:i" }}</td>
+                <td>{{ attempt.total_score }} / {{ attempt.exam.total_marks }}</td>
+                <td>
+                    <a href="{% url 'attempt_result' attempt.id %}" class="btn btn-sm btn-info">View Result</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4">No attempts found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

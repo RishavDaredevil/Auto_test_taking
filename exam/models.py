@@ -1,7 +1,11 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import FileExtensionValidator
-
+import img2pdf
+from PIL import Image
+import io
+import os
+from django.core.files.base import ContentFile
 
 class Exam(models.Model):
     """
@@ -14,7 +18,7 @@ class Exam(models.Model):
     # The static artifact
     question_paper = models.FileField(
         upload_to='exams/pdfs/',
-        validators=[FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'png', 'zip'])]
+        validators=[FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png', 'zip'])]
     )
 
     # Configuration
@@ -29,6 +33,34 @@ class Exam(models.Model):
 
     def __str__(self):
         return self.title
+
+    def save(self, *args, **kwargs):
+        # Check if question_paper is an image and convert to PDF
+        if self.question_paper:
+            ext = os.path.splitext(self.question_paper.name)[1].lower()
+            if ext in ['.jpg', '.jpeg', '.png']:
+                try:
+                    # Read content
+                    if hasattr(self.question_paper, 'open'):
+                         self.question_paper.open()
+                    image_content = self.question_paper.read()
+
+                    # Ensure pointer is reset if we need to read it again (though we just consume it)
+                    # Use BytesIO to help PIL identify it if needed, or img2pdf directly
+
+                    # Convert to PDF bytes using img2pdf directly on the image bytes
+                    pdf_bytes = img2pdf.convert(image_content)
+
+                    # Save as new PDF file
+                    base_name = os.path.splitext(os.path.basename(self.question_paper.name))[0]
+                    new_filename = f"{base_name}.pdf"
+
+                    self.question_paper.save(new_filename, ContentFile(pdf_bytes), save=False)
+                except Exception as e:
+                    print(f"Error converting image to PDF: {e}")
+                    pass
+
+        super().save(*args, **kwargs)
 
 
 class Section(models.Model):

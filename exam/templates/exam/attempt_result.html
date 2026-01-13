@@ -1,0 +1,48 @@
+{% extends 'exam/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="alert alert-success">
+        <h3>Result: {{ attempt.exam.title }}</h3>
+        <p><strong>Score:</strong> {{ attempt.total_score }} / {{ attempt.exam.total_marks }}</p>
+    </div>
+
+    <h4>Detailed Analysis</h4>
+    <div class="table-responsive">
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Q.No</th>
+                    <th>Type</th>
+                    <th>Correct Answer</th>
+                    <th>Your Answer</th>
+                    <th>Status</th>
+                    <th>Marks</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for response in attempt.responses.all %}
+                <tr class="{% if response.is_correct %}table-success{% elif response.user_input %}table-danger{% else %}table-light{% endif %}">
+                    <td>{{ response.question.question_number }}</td>
+                    <td>{{ response.question.question_type }}</td>
+                    <td>{{ response.question.correct_answer }}</td>
+                    <td>{{ response.user_input|default:"-" }}</td>
+                    <td>
+                        {% if response.is_correct %}
+                            <span class="badge bg-success">Correct</span>
+                        {% elif response.user_input %}
+                            <span class="badge bg-danger">Incorrect</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Unattempted</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ response.marks_awarded }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <a href="{% url 'exam_list' %}" class="btn btn-primary mt-3">Back to Exams</a>
+</div>
+{% endblock %}
