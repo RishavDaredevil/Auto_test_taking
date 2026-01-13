@@ -1,0 +1,55 @@
+def calculate_score(attempt_id):
+    attempt = Attempt.objects.get(id=attempt_id)
+    responses = attempt.responses.all()
+    total_score = 0
+
+    for response in responses:
+        q_meta = response.question
+        user_val = response.user_input
+        correct_val = q_meta.correct_answer
+
+        is_correct = False
+
+        # MCQ Logic: Exact Match
+        if q_meta.question_type == 'MCQ':
+            if user_val == correct_val:
+                is_correct = True
+
+        # MSQ Logic: Set Comparison (Order independent)
+        elif q_meta.question_type == 'MSQ':
+            # Assuming user_val and correct_val are sorted strings like "A,C"
+            if user_val == correct_val:
+                is_correct = True
+
+        # NAT Logic: Range Comparison
+        elif q_meta.question_type == 'NAT':
+            try:
+                u_float = float(user_val)
+                # correct_val format "min:max" e.g., "5.1:5.3"
+                min_val, max_val = map(float, correct_val.split(':'))
+                # Inclusive comparison with tolerance
+                if min_val <= u_float <= max_val:
+                    is_correct = True
+            except (ValueError, AttributeError):
+                is_correct = False
+
+        # Apply Marks
+        if is_correct:
+            marks = q_meta.marks_positive
+            total_score += marks
+        else:
+            # Negative marking only applies if attempted (status!= not_answered)
+            # And typically only for MCQs in GATE
+            if response.status == 'answered' and q_meta.question_type == 'MCQ':
+                marks = -q_meta.marks_negative
+                total_score += marks
+            else:
+                marks = 0
+
+        # Save per-question result
+        response.is_correct = is_correct
+        response.marks_awarded = marks
+        response.save()
+
+    attempt.total_score = total_score
+    attempt.save()
