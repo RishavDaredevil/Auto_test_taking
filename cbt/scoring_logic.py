@@ -1,9 +1,10 @@
-from .models import Attempt
+from .models import Attempt, Response
 
 def calculate_score(attempt_id):
     attempt = Attempt.objects.get(id=attempt_id)
     responses = attempt.responses.all()
     total_score = 0
+    responses_to_update = []
 
     for response in responses:
         q_meta = response.question
@@ -70,7 +71,9 @@ def calculate_score(attempt_id):
         # Save per-question result
         response.is_correct = is_correct
         response.marks_awarded = marks
-        response.save()
+        responses_to_update.append(response)
+
+    Response.objects.bulk_update(responses_to_update, ['is_correct', 'marks_awarded'])
 
     attempt.total_score = total_score
     attempt.save()
