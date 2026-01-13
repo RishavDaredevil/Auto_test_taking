@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Result: {{ attempt.exam.title }}</h2>
+<p>Score: {{ attempt.total_score }} / {{ attempt.exam.total_marks }}</p>
+
+<h3>Details</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Q No</th>
+            <th>Type</th>
+            <th>Your Answer</th>
+            <th>Correct Answer</th>
+            <th>Status</th>
+            <th>Marks</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for resp in responses %}
+        <tr style="background-color: {% if resp.is_correct %}#dff0d8{% else %}#f2dede{% endif %}">
+            <td>{{ resp.question.question_number }}</td>
+            <td>{{ resp.question.question_type }}</td>
+            <td>{{ resp.user_input }}</td>
+            <td>{{ resp.question.correct_answer }}</td>
+            <td>{{ resp.is_correct|yesno:"Correct,Incorrect" }}</td>
+            <td>{{ resp.marks_awarded }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<a href="{% url 'exam_list' %}">Back to Home</a>
+{% endblock %}

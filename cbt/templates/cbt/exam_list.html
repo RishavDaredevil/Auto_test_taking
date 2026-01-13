@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Available Exams</h2>
+<ul>
+    {% for exam in exams %}
+    <li><a href="{% url 'exam_detail' exam.slug %}">{{ exam.title }}</a></li>
+    {% empty %}
+    <li>No exams available.</li>
+    {% endfor %}
+</ul>
+{% endblock %}
