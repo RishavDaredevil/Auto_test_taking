@@ -1,0 +1,179 @@
+Watching for file changes with StatReloader
+[13/Jan/2026 11:04:44] "GET /admin/login/ HTTP/1.1" 200 4067
+[13/Jan/2026 11:04:44] "GET /static/admin/css/nav_sidebar.css HTTP/1.1" 200 2810
+[13/Jan/2026 11:04:44] "GET /static/admin/css/login.css HTTP/1.1" 200 951
+[13/Jan/2026 11:04:44] "GET /static/admin/css/base.css HTTP/1.1" 200 23100
+[13/Jan/2026 11:04:44] "GET /static/admin/css/dark_mode.css HTTP/1.1" 200 3538
+[13/Jan/2026 11:04:44] "GET /static/admin/css/responsive.css HTTP/1.1" 200 16273
+[13/Jan/2026 11:04:44] "GET /static/admin/js/theme.js HTTP/1.1" 200 1653
+[13/Jan/2026 11:04:44] "GET /static/admin/js/nav_sidebar.js HTTP/1.1" 200 3063
+[13/Jan/2026 11:04:45] "POST /admin/login/ HTTP/1.1" 200 4240
+Internal Server Error: /cbt/attempt/3/
+Traceback (most recent call last):
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/django/db/models/fields/__init__.py", line 2128, in get_prep_value
+    return int(value)
+           ^^^^^^^^^^
+TypeError: int() argument must be a string, a bytes-like object or a real number, not 'SimpleLazyObject'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/cbt/views.py", line 25, in exam_interface
+    attempt = get_object_or_404(Attempt, id=attempt_id, user=request.user)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/django/shortcuts.py", line 90, in get_object_or_404
+    return queryset.get(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/django/db/models/query.py", line 625, in get
+    clone = self._chain() if self.query.combinator else self.filter(*args, **kwargs)
+                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/django/db/models/query.py", line 1542, in filter
+    return self._filter_or_exclude(False, args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/django/db/models/query.py", line 1560, in _filter_or_exclude
+    clone._filter_or_exclude_inplace(negate, args, kwargs)
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/django/db/models/query.py", line 1570, in _filter_or_exclude_inplace
+    self._query.add_q(Q(*args, **kwargs))
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/django/db/models/sql/query.py", line 1671, in add_q
+    clause, _ = self._add_q(q_object, can_reuse)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/django/db/models/sql/query.py", line 1703, in _add_q
+    child_clause, needed_inner = self.build_filter(
+                                 ^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/django/db/models/sql/query.py", line 1613, in build_filter
+    condition = self.build_lookup(lookups, col, value)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/django/db/models/sql/query.py", line 1440, in build_lookup
+    lookup = lookup_class(lhs, rhs)
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/django/db/models/lookups.py", line 35, in __init__
+    self.rhs = self.get_prep_lookup()
+               ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/django/db/models/fields/related_lookups.py", line 113, in get_prep_lookup
+    self.rhs = target_field.get_prep_value(self.rhs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/django/db/models/fields/__init__.py", line 2130, in get_prep_value
+    raise e.__class__(
+TypeError: Field 'id' expected a number but got <SimpleLazyObject: <django.contrib.auth.models.AnonymousUser object at 0x7f5e6872c380>>.
+[13/Jan/2026 11:04:45] "GET /cbt/attempt/3/ HTTP/1.1" 500 130364
+[13/Jan/2026 11:05:24] "GET /admin/login/ HTTP/1.1" 200 4067
+[13/Jan/2026 11:05:24] "GET /static/admin/css/base.css HTTP/1.1" 200 23100
+[13/Jan/2026 11:05:24] "GET /static/admin/css/dark_mode.css HTTP/1.1" 200 3538
+[13/Jan/2026 11:05:24] "GET /static/admin/css/nav_sidebar.css HTTP/1.1" 200 2810
+[13/Jan/2026 11:05:24] "GET /static/admin/css/login.css HTTP/1.1" 200 951
+[13/Jan/2026 11:05:24] "GET /static/admin/css/responsive.css HTTP/1.1" 200 16273
+[13/Jan/2026 11:05:24] "GET /static/admin/js/theme.js HTTP/1.1" 200 1653
+[13/Jan/2026 11:05:24] "GET /static/admin/js/nav_sidebar.js HTTP/1.1" 200 3063
+[13/Jan/2026 11:05:25] "POST /admin/login/ HTTP/1.1" 200 4240
+Internal Server Error: /cbt/attempt/4/
+Traceback (most recent call last):
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/django/db/models/fields/__init__.py", line 2128, in get_prep_value
+    return int(value)
+           ^^^^^^^^^^
+TypeError: int() argument must be a string, a bytes-like object or a real number, not 'SimpleLazyObject'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/cbt/views.py", line 25, in exam_interface
+    attempt = get_object_or_404(Attempt, id=attempt_id, user=request.user)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/django/shortcuts.py", line 90, in get_object_or_404
+    return queryset.get(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/django/db/models/query.py", line 625, in get
+    clone = self._chain() if self.query.combinator else self.filter(*args, **kwargs)
+                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/django/db/models/query.py", line 1542, in filter
+    return self._filter_or_exclude(False, args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/django/db/models/query.py", line 1560, in _filter_or_exclude
+    clone._filter_or_exclude_inplace(negate, args, kwargs)
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/django/db/models/query.py", line 1570, in _filter_or_exclude_inplace
+    self._query.add_q(Q(*args, **kwargs))
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/django/db/models/sql/query.py", line 1671, in add_q
+    clause, _ = self._add_q(q_object, can_reuse)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/django/db/models/sql/query.py", line 1703, in _add_q
+    child_clause, needed_inner = self.build_filter(
+                                 ^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/django/db/models/sql/query.py", line 1613, in build_filter
+    condition = self.build_lookup(lookups, col, value)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/django/db/models/sql/query.py", line 1440, in build_lookup
+    lookup = lookup_class(lhs, rhs)
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/django/db/models/lookups.py", line 35, in __init__
+    self.rhs = self.get_prep_lookup()
+               ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/django/db/models/fields/related_lookups.py", line 113, in get_prep_lookup
+    self.rhs = target_field.get_prep_value(self.rhs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.pyenv/versions/3.12.12/lib/python3.12/site-packages/django/db/models/fields/__init__.py", line 2130, in get_prep_value
+    raise e.__class__(
+TypeError: Field 'id' expected a number but got <SimpleLazyObject: <django.contrib.auth.models.AnonymousUser object at 0x7f5e687a7ef0>>.
+[13/Jan/2026 11:05:25] "GET /cbt/attempt/4/ HTTP/1.1" 500 130364
+[13/Jan/2026 11:06:02] "GET /admin/login/ HTTP/1.1" 200 4067
+[13/Jan/2026 11:06:02] "GET /static/admin/css/login.css HTTP/1.1" 200 951
+[13/Jan/2026 11:06:02] "GET /static/admin/css/dark_mode.css HTTP/1.1" 200 3538
+[13/Jan/2026 11:06:02] "GET /static/admin/js/theme.js HTTP/1.1" 200 1653
+[13/Jan/2026 11:06:02] "GET /static/admin/css/responsive.css HTTP/1.1" 200 16273
+[13/Jan/2026 11:06:02] "GET /static/admin/css/nav_sidebar.css HTTP/1.1" 200 2810
+[13/Jan/2026 11:06:02] "GET /static/admin/css/base.css HTTP/1.1" 200 23100
+[13/Jan/2026 11:06:02] "GET /static/admin/js/nav_sidebar.js HTTP/1.1" 200 3063
+[13/Jan/2026 11:06:03] "POST /admin/login/ HTTP/1.1" 302 0
+[13/Jan/2026 11:06:03] "GET /admin/ HTTP/1.1" 200 4448
+[13/Jan/2026 11:06:03] "GET /static/admin/css/dashboard.css HTTP/1.1" 200 441
+[13/Jan/2026 11:06:03] "GET /cbt/attempt/5/ HTTP/1.1" 200 15799
+[13/Jan/2026 11:06:04] "GET /media/exams/pdfs/test_verify.pdf HTTP/1.1" 200 308
+[13/Jan/2026 11:06:34] "POST /cbt/attempt/5/sync/ HTTP/1.1" 200 16
+[13/Jan/2026 11:07:03] "GET /admin/login/ HTTP/1.1" 200 4067
+[13/Jan/2026 11:07:03] "GET /static/admin/css/nav_sidebar.css HTTP/1.1" 200 2810
+[13/Jan/2026 11:07:03] "GET /static/admin/css/dark_mode.css HTTP/1.1" 200 3538
+[13/Jan/2026 11:07:03] "GET /static/admin/css/login.css HTTP/1.1" 200 951
+[13/Jan/2026 11:07:03] "GET /static/admin/css/base.css HTTP/1.1" 200 23100
+[13/Jan/2026 11:07:03] "GET /static/admin/css/responsive.css HTTP/1.1" 200 16273
+[13/Jan/2026 11:07:03] "GET /static/admin/js/theme.js HTTP/1.1" 200 1653
+[13/Jan/2026 11:07:03] "GET /static/admin/js/nav_sidebar.js HTTP/1.1" 200 3063
+[13/Jan/2026 11:07:05] "POST /admin/login/ HTTP/1.1" 302 0
+[13/Jan/2026 11:07:05] "GET /admin/ HTTP/1.1" 200 4448
+[13/Jan/2026 11:07:05] "GET /static/admin/css/dashboard.css HTTP/1.1" 200 441
+[13/Jan/2026 11:07:05] "GET /cbt/attempt/6/ HTTP/1.1" 200 15799
+[13/Jan/2026 11:07:05] "GET /media/exams/pdfs/test_verify.pdf HTTP/1.1" 200 308
+/app/cbt/views.py changed, reloading.
+Performing system checks...
+
+System check identified no issues (0 silenced).
+January 13, 2026 - 11:04:40
+Django version 6.0.1, using settings 'pdf2CBT.settings'
+Starting development server at http://0.0.0.0:8000/
+Quit the server with CONTROL-C.
+
+WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/6.0/howto/deployment/
+Watching for file changes with StatReloader
+[13/Jan/2026 11:09:41] "GET /admin/login/ HTTP/1.1" 200 4067
+[13/Jan/2026 11:09:41] "GET /static/admin/css/base.css HTTP/1.1" 200 23100
+[13/Jan/2026 11:09:41] "GET /static/admin/css/dark_mode.css HTTP/1.1" 200 3538
+[13/Jan/2026 11:09:41] "GET /static/admin/js/theme.js HTTP/1.1" 200 1653
+[13/Jan/2026 11:09:41] "GET /static/admin/css/nav_sidebar.css HTTP/1.1" 200 2810
+[13/Jan/2026 11:09:41] "GET /static/admin/css/login.css HTTP/1.1" 200 951
+[13/Jan/2026 11:09:41] "GET /static/admin/css/responsive.css HTTP/1.1" 200 16273
+[13/Jan/2026 11:09:41] "GET /static/admin/js/nav_sidebar.js HTTP/1.1" 200 3063
+[13/Jan/2026 11:09:42] "POST /admin/login/ HTTP/1.1" 302 0
+[13/Jan/2026 11:09:42] "GET /admin/ HTTP/1.1" 200 4448
+[13/Jan/2026 11:09:42] "GET /static/admin/css/dashboard.css HTTP/1.1" 200 441
+[13/Jan/2026 11:09:42] "GET /cbt/attempt/7/ HTTP/1.1" 200 18183
+[13/Jan/2026 11:09:42] "GET /media/exams/pdfs/test_verify.pdf HTTP/1.1" 200 308
