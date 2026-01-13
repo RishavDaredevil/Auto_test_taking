@@ -4,7 +4,20 @@ from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from .models import Exam, Attempt, QuestionMeta, Response
 from .scoring_logic import calculate_score
+from .forms import ExamForm
 import json
+
+@login_required
+def add_exam(request):
+    if request.method == 'POST':
+        form = ExamForm(request.POST, request.FILES)
+        if form.is_valid():
+            exam = form.save()
+            # The signal in signals.py will automatically trigger process_answer_key
+            return redirect('exam_list')
+    else:
+        form = ExamForm()
+    return render(request, 'cbt/add_exam.html', {'form': form})
 
 @login_required
 def exam_list(request):

@@ -1,6 +1,11 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import FileExtensionValidator
+import os
+import img2pdf
+from PIL import Image
+from io import BytesIO
+from django.core.files.base import ContentFile
 
 
 class Exam(models.Model):
@@ -26,6 +31,28 @@ class Exam(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
+
+    def save(self, *args, **kwargs):
+        # Convert image to PDF if uploaded
+        if self.question_paper:
+            ext = os.path.splitext(self.question_paper.name)[1].lower()
+            if ext in ['.jpg', '.jpeg', '.png']:
+                image = Image.open(self.question_paper)
+                if image.mode == 'RGBA':
+                    image = image.convert('RGB')
+
+                # We need to pass bytes or a file-like object to img2pdf if we don't have a filesystem path
+                # Since image is open, we can save it to bytes
+                img_byte_arr = BytesIO()
+                image.save(img_byte_arr, format=image.format)
+                img_byte_arr = img_byte_arr.getvalue()
+
+                pdf_bytes = img2pdf.convert(img_byte_arr)
+                new_filename = os.path.splitext(self.question_paper.name)[0] + '.pdf'
+
+                self.question_paper.save(new_filename, ContentFile(pdf_bytes), save=False)
+
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.title

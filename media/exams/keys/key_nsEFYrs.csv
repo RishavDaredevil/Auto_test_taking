@@ -1,0 +1,6 @@
+Section, Question No, Type, Key, Marks, Negative
+        Aptitude, 1, MCQ, A, 1, 0.33
+        Core, 2, MSQ, A;B, 2, 0
+        Core, 3, NAT, 5.1:5.3, 2, 0
+        Aptitude, 4, MCQ, B, 1, 0.33
+        Maths, 5, NAT, 10, 2, 0
