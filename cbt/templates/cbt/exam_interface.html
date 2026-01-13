@@ -1,0 +1,471 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ exam.title }}</title>
+    <style>
+        body { margin: 0; padding: 0; height: 100vh; display: flex; flex-direction: column; font-family: sans-serif; }
+        header { background: #333; color: white; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .split-screen { display: flex; flex: 1; overflow: hidden; }
+        .left-pane { flex: 1; border-right: 1px solid #ccc; overflow: auto; background: #525659; display: flex; flex-direction: column; align-items: center; }
+        .pdf-toolbar { background: #333; color: white; width: 100%; padding: 5px; text-align: center; position: sticky; top: 0; z-index: 10; }
+        .right-pane { width: 400px; display: flex; flex-direction: column; background: #f5f5f5; }
+        #the-canvas { border: 1px solid black; margin: 10px; }
+
+        /* Palette Styles */
+        .palette-container { padding: 10px; overflow-y: auto; flex: 1; }
+        .question-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+        .palette-btn { padding: 10px; border: 1px solid #ccc; cursor: pointer; background: white; }
+        .palette-btn.current { border: 2px solid blue; }
+        .palette-btn.answered { background-color: green; color: white; }
+        .palette-btn.not_answered { background-color: red; color: white; }
+        .palette-btn.marked_for_review { background-color: purple; color: white; }
+        .palette-btn.ans_marked_for_review { background-color: blue; color: white; }
+
+        .question-area { padding: 20px; background: white; border-bottom: 1px solid #ccc; }
+        .controls { padding: 10px; display: flex; justify-content: space-between; background: #eee; }
+
+        /* Calculator Modal */
+        #calc-modal { display: none; position: fixed; top: 50px; left: 50px; z-index: 1000; background: white; border: 1px solid #333; box-shadow: 0 0 10px rgba(0,0,0,0.5); width: 320px; }
+        .calc-header { background: #333; color: white; padding: 5px; cursor: move; display: flex; justify-content: space-between; }
+        .calc-body { padding: 10px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+        .calc-body button { padding: 10px; font-size: 14px; }
+        .calc-display { grid-column: span 5; margin-bottom: 10px; text-align: right; padding: 5px; font-size: 18px; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.worker.min.js';</script>
+</head>
+<body>
+
+<header>
+    <div>{{ exam.title }}</div>
+    <div>Time Left: <span id="timer">00:00:00</span></div>
+    <div>
+        <button onclick="toggleCalculator()">Calculator</button>
+        <button onclick="submitExam()" style="background: red; color: white; border: none; padding: 5px 10px;">Submit</button>
+    </div>
+</header>
+
+<div class="split-screen">
+    <div class="left-pane" id="pdf-container">
+        <div class="pdf-toolbar">
+            <button onclick="prevPage()">Prev</button>
+            <button onclick="nextPage()">Next</button>
+            <span>Page: <span id="page_num"></span> / <span id="page_count"></span></span>
+            <button onclick="zoomIn()">+</button>
+            <button onclick="zoomOut()">-</button>
+        </div>
+        <canvas id="the-canvas"></canvas>
+    </div>
+
+    <div class="right-pane">
+        <div class="question-area">
+            <h3>Question <span id="q-number">1</span></h3>
+            <div id="q-input-container">
+                <!-- Inputs rendered here -->
+            </div>
+        </div>
+        <div class="controls">
+            <button onclick="markForReview()">Mark for Review</button>
+            <button onclick="clearResponse()">Clear Response</button>
+            <button onclick="saveAndNext()">Save & Next</button>
+        </div>
+        <div class="palette-container">
+            <h4>Question Palette</h4>
+            <div class="question-grid" id="palette-grid">
+                <!-- Buttons rendered here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="calc-modal">
+    <div class="calc-header" id="calc-header">
+        <span>Scientific Calculator</span>
+        <button onclick="toggleCalculator()" style="background:none; border:none; color:white;">X</button>
+    </div>
+    <div class="calc-body">
+        <input type="text" id="calc-display" class="calc-display" readonly>
+
+        <!-- Scientific Row 1 -->
+        <button onclick="calcFn('sin')">sin</button>
+        <button onclick="calcFn('cos')">cos</button>
+        <button onclick="calcFn('tan')">tan</button>
+        <button onclick="calcFn('log')">log</button>
+        <button onclick="calcFn('ln')">ln</button>
+
+        <!-- Scientific Row 2 -->
+        <button onclick="calcFn('sqrt')">√</button>
+        <button onclick="calcFn('pow')">^</button>
+        <button onclick="calcFn('pi')">π</button>
+        <button onclick="calcFn('e')">e</button>
+        <button onclick="calcInput('(')">(</button>
+        <button onclick="calcInput(')')">)</button>
+
+        <!-- Numpad -->
+        <button onclick="calcInput('7')">7</button>
+        <button onclick="calcInput('8')">8</button>
+        <button onclick="calcInput('9')">9</button>
+        <button onclick="calcInput('/')">/</button>
+        <button onclick="calcClear()">C</button>
+
+        <button onclick="calcInput('4')">4</button>
+        <button onclick="calcInput('5')">5</button>
+        <button onclick="calcInput('6')">6</button>
+        <button onclick="calcInput('*')">*</button>
+        <button onclick="calcBackspace()">⌫</button>
+
+        <button onclick="calcInput('1')">1</button>
+        <button onclick="calcInput('2')">2</button>
+        <button onclick="calcInput('3')">3</button>
+        <button onclick="calcInput('-')">-</button>
+        <button style="grid-row: span 2;" onclick="calcEval()">=</button>
+
+        <button onclick="calcInput('0')" style="grid-column: span 2;">0</button>
+        <button onclick="calcInput('.')">.</button>
+        <button onclick="calcInput('+')">+</button>
+    </div>
+</div>
+
+<script>
+    // --- Data from Django ---
+    const examDuration = {{ exam.duration_minutes }} * 60;
+    const pdfUrl = "{{ exam.question_paper.url }}";
+    // questions is a list of dicts: {id, number, type, section_id}
+    const questions = {{ questions_json|safe }};
+    const attemptId = {{ attempt.id }};
+    const csrfToken = '{{ csrf_token }}';
+
+    // --- State ---
+    let currentState = {
+        currentQuestionIndex: 0, // 0-based index for array
+        responses: {}, // Map question_id -> {value, status}
+        timeLeft: examDuration
+    };
+
+    // Load responses if resuming
+    const savedState = {{ attempt.current_state|safe }};
+    if (savedState && savedState.responses) {
+        currentState.responses = savedState.responses;
+        if (savedState.timeLeft) currentState.timeLeft = savedState.timeLeft;
+    }
+
+    // --- PDF.js Logic ---
+    let pdfDoc = null,
+        pageNum = 1,
+        pageRendering = false,
+        pageNumPending = null,
+        scale = 1.0,
+        canvas = document.getElementById('the-canvas'),
+        ctx = canvas.getContext('2d');
+
+    pdfjsLib.getDocument(pdfUrl).promise.then(function(pdfDoc_) {
+        pdfDoc = pdfDoc_;
+        document.getElementById('page_count').textContent = pdfDoc.numPages;
+        renderPage(pageNum);
+    });
+
+    function renderPage(num) {
+        pageRendering = true;
+        pdfDoc.getPage(num).then(function(page) {
+            var viewport = page.getViewport({scale: scale});
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+
+            var renderContext = {
+                canvasContext: ctx,
+                viewport: viewport
+            };
+            var renderTask = page.render(renderContext);
+
+            renderTask.promise.then(function() {
+                pageRendering = false;
+                if (pageNumPending !== null) {
+                    renderPage(pageNumPending);
+                    pageNumPending = null;
+                }
+            });
+        });
+        document.getElementById('page_num').textContent = num;
+    }
+
+    function queueRenderPage(num) {
+        if (pageRendering) {
+            pageNumPending = num;
+        } else {
+            renderPage(num);
+        }
+    }
+
+    function prevPage() {
+        if (pageNum <= 1) return;
+        pageNum--;
+        queueRenderPage(pageNum);
+    }
+
+    function nextPage() {
+        if (pageNum >= pdfDoc.numPages) return;
+        pageNum++;
+        queueRenderPage(pageNum);
+    }
+
+    function zoomIn() { scale += 0.2; queueRenderPage(pageNum); }
+    function zoomOut() { scale -= 0.2; queueRenderPage(pageNum); }
+
+    // --- Exam Logic ---
+
+    function init() {
+        renderPalette();
+        loadQuestion(0);
+        setInterval(updateTimer, 1000);
+        setInterval(syncState, 30000); // Sync every 30s
+    }
+
+    function updateTimer() {
+        if (currentState.timeLeft <= 0) {
+            submitExam(true); // Auto submit
+            return;
+        }
+        currentState.timeLeft--;
+        let h = Math.floor(currentState.timeLeft / 3600);
+        let m = Math.floor((currentState.timeLeft % 3600) / 60);
+        let s = currentState.timeLeft % 60;
+        document.getElementById('timer').innerText = `${h}:${m}:${s}`;
+    }
+
+    function loadQuestion(index) {
+        currentState.currentQuestionIndex = index;
+        const q = questions[index];
+        document.getElementById('q-number').innerText = q.number;
+
+        // Render Input
+        const container = document.getElementById('q-input-container');
+        container.innerHTML = '';
+
+        const resp = currentState.responses[q.id] || {value: null};
+
+        if (q.type === 'MCQ') {
+            ['A', 'B', 'C', 'D'].forEach(opt => {
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <input type="radio" name="ans" value="${opt}" ${resp.value === opt ? 'checked' : ''} onchange="updateLocalResponse()">
+                    <label>${opt}</label>
+                `;
+                container.appendChild(div);
+            });
+        } else if (q.type === 'MSQ') {
+            ['A', 'B', 'C', 'D'].forEach(opt => {
+                const div = document.createElement('div');
+                const isChecked = resp.value && resp.value.includes(opt);
+                div.innerHTML = `
+                    <input type="checkbox" name="ans" value="${opt}" ${isChecked ? 'checked' : ''} onchange="updateLocalResponse()">
+                    <label>${opt}</label>
+                `;
+                container.appendChild(div);
+            });
+        } else if (q.type === 'NAT') {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.id = 'nat-input';
+            input.value = resp.value || '';
+            input.oninput = updateLocalResponse;
+            container.appendChild(input);
+        }
+
+        // Update palette highlight
+        document.querySelectorAll('.palette-btn').forEach(b => b.classList.remove('current'));
+        document.getElementById(`btn-${q.id}`).classList.add('current');
+    }
+
+    function updateLocalResponse() {
+        const q = questions[currentState.currentQuestionIndex];
+        let val = null;
+
+        if (q.type === 'MCQ') {
+            const el = document.querySelector('input[name="ans"]:checked');
+            if (el) val = el.value;
+        } else if (q.type === 'MSQ') {
+            const els = document.querySelectorAll('input[name="ans"]:checked');
+            const vals = [];
+            els.forEach(el => vals.push(el.value));
+            if (vals.length > 0) val = vals.join(',');
+        } else if (q.type === 'NAT') {
+            val = document.getElementById('nat-input').value;
+        }
+
+        if (!currentState.responses[q.id]) currentState.responses[q.id] = {status: 'not_answered'};
+        currentState.responses[q.id].value = val;
+        if (val) currentState.responses[q.id].status = 'answered';
+        else currentState.responses[q.id].status = 'not_answered';
+    }
+
+    function saveAndNext() {
+        updateLocalResponse();
+        // Move next
+        if (currentState.currentQuestionIndex < questions.length - 1) {
+            loadQuestion(currentState.currentQuestionIndex + 1);
+        }
+        renderPalette();
+    }
+
+    function markForReview() {
+        const q = questions[currentState.currentQuestionIndex];
+        if (!currentState.responses[q.id]) currentState.responses[q.id] = {value: null};
+
+        if (currentState.responses[q.id].value) {
+            currentState.responses[q.id].status = 'ans_marked_for_review';
+        } else {
+            currentState.responses[q.id].status = 'marked_for_review';
+        }
+        renderPalette();
+        if (currentState.currentQuestionIndex < questions.length - 1) {
+            loadQuestion(currentState.currentQuestionIndex + 1);
+        }
+    }
+
+    function clearResponse() {
+        const q = questions[currentState.currentQuestionIndex];
+        if (currentState.responses[q.id]) {
+            currentState.responses[q.id].value = null;
+            currentState.responses[q.id].status = 'not_answered';
+        }
+        loadQuestion(currentState.currentQuestionIndex); // Reload to clear inputs
+        renderPalette();
+    }
+
+    function renderPalette() {
+        const grid = document.getElementById('palette-grid');
+        grid.innerHTML = '';
+        questions.forEach((q, idx) => {
+            const btn = document.createElement('button');
+            btn.className = 'palette-btn';
+            btn.id = `btn-${q.id}`;
+            btn.innerText = q.number;
+            btn.onclick = () => loadQuestion(idx);
+
+            const resp = currentState.responses[q.id];
+            if (resp) {
+                btn.classList.add(resp.status);
+            } else {
+                btn.classList.add('not_visited'); // Default
+            }
+
+            grid.appendChild(btn);
+        });
+    }
+
+    function syncState() {
+        // Return promise
+        return fetch(`/cbt/attempt/${attemptId}/sync/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify(currentState)
+        });
+    }
+
+    async function submitExam(auto = false) {
+        if (!auto && !confirm("Are you sure you want to submit?")) return;
+
+        // Ensure state is synced before submitting
+        try {
+            await syncState();
+        } catch (e) {
+            console.error("Sync failed", e);
+            if (!auto && !confirm("Sync failed. Submit anyway?")) return;
+        }
+
+        fetch(`/cbt/attempt/${attemptId}/submit/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken
+            }
+        }).then(res => {
+            if (res.ok) window.location.href = `/cbt/attempt/${attemptId}/result/`;
+        });
+    }
+
+    // --- Scientific Calculator ---
+    function toggleCalculator() {
+        const el = document.getElementById('calc-modal');
+        el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function calcInput(val) {
+        document.getElementById('calc-display').value += val;
+    }
+    function calcClear() {
+        document.getElementById('calc-display').value = '';
+    }
+    function calcBackspace() {
+        let val = document.getElementById('calc-display').value;
+        document.getElementById('calc-display').value = val.slice(0, -1);
+    }
+
+    function calcFn(fn) {
+        const display = document.getElementById('calc-display');
+        const val = display.value;
+
+        // Simple immediate execution for functions, can be improved to insert "sin("
+        // But typical cheap calculators do fn(val) or val -> fn.
+        // Let's assume we want to insert 'sin(' into the expression
+        display.value += fn + '(';
+    }
+
+    function calcEval() {
+        const display = document.getElementById('calc-display');
+        let expr = display.value;
+
+        // Replace functions with Math.func
+        expr = expr.replace(/sin/g, 'Math.sin');
+        expr = expr.replace(/cos/g, 'Math.cos');
+        expr = expr.replace(/tan/g, 'Math.tan');
+        expr = expr.replace(/log/g, 'Math.log10');
+        expr = expr.replace(/ln/g, 'Math.log');
+        expr = expr.replace(/sqrt/g, 'Math.sqrt');
+        expr = expr.replace(/pi/g, 'Math.PI');
+        expr = expr.replace(/e/g, 'Math.E');
+        expr = expr.replace(/\^/g, '**');
+
+        try {
+            // Function constructor is safer than eval, though still has risks.
+            // But for a calculator with sanitized input (mostly), it's acceptable in this context.
+            // Ideally use a parser.
+            const result = new Function('return ' + expr)();
+            display.value = result;
+        } catch(e) {
+            display.value = 'Error';
+        }
+    }
+
+    // Draggable
+    const calc = document.getElementById('calc-modal');
+    const header = document.getElementById('calc-header');
+    let isDragging = false, offsetX, offsetY;
+
+    header.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        offsetX = e.clientX - calc.offsetLeft;
+        offsetY = e.clientY - calc.offsetTop;
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (isDragging) {
+            calc.style.left = (e.clientX - offsetX) + 'px';
+            calc.style.top = (e.clientY - offsetY) + 'px';
+        }
+    });
+
+    document.addEventListener('mouseup', () => isDragging = false);
+
+
+    // Start
+    init();
+
+</script>
+
+</body>
+</html>
